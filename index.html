@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>my edit — journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&family=Noto+Serif+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --paper: #EDE8DC;
+    --warm-white: #FAF8F4;
+    --charcoal: #2C2C2A;
+    --mid: #7A7670;
+    --light: #B8B3A8;
+    --accent: #C4AA8A;
+    --accent-dark: #8C7355;
+    --border: #D8D2C6;
+    --red: #B85C4A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cream);
+    color: var(--charcoal);
+    font-family: 'Noto Serif KR', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── LOCK SCREEN ── */
+  #lockScreen {
+    position: fixed; inset: 0;
+    background: var(--charcoal);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 1000;
+    gap: 0;
+  }
+
+  .lock-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  .lock-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--mid);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .pin-dots {
+    display: flex; gap: 16px; margin-bottom: 32px;
+  }
+
+  .pin-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--mid);
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .pin-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .pin-pad {
+    display: grid; grid-template-columns: repeat(3, 64px);
+    gap: 12px;
+  }
+
+  .pin-btn {
+    width: 64px; height: 64px;
+    background: transparent;
+    border: 1px solid #3A3A38;
+    border-radius: 50%;
+    color: var(--paper);
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .pin-btn:hover { background: #3A3A38; }
+  .pin-btn:active { transform: scale(0.93); }
+
+  .lock-error {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 0.2em;
+    margin-top: 24px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .lock-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: #4A4A48;
+    letter-spacing: 0.15em;
+    margin-top: 40px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ── MAIN APP ── */
+  #app { display: none; }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    background: var(--warm-white);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 48px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    color: var(--charcoal);
+  }
+
+  .logo em {
+    font-style: italic;
+    color: var(--accent-dark);
+  }
+
+  nav {
+    display: flex; gap: 0; align-items: center;
+  }
+
+  .nav-btn {
+    background: none; border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--mid);
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 8px 20px;
+    transition: color 0.2s;
+    position: relative;
+  }
+
+  .nav-btn::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 20px; right: 20px;
+    height: 1px; background: var(--charcoal);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+
+  .nav-btn:hover { color: var(--charcoal); }
+  .nav-btn:hover::after { transform: scaleX(1); }
+  .nav-btn.active { color: var(--charcoal); }
+  .nav-btn.active::after { transform: scaleX(1); }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── WRITE VIEW ── */
+  #writeView {
+    max-width: 1200px; margin: 0 auto; padding: 48px;
+  }
+
+  .write-header {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 0;
+    margin-bottom: 40px;
+    border: 1px solid var(--border);
+    background: var(--warm-white);
+  }
+
+  .write-meta-left, .write-meta-right {
+    padding: 32px 40px;
+  }
+
+  .write-divider {
+    background: var(--border);
+  }
+
+  .meta-row {
+    display: flex; align-items: baseline;
+    gap: 16px; margin-bottom: 20px;
+  }
+
+  .meta-row:last-child { margin-bottom: 0; }
+
+  .meta-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--light);
+    text-transform: uppercase;
+    width: 80px; flex-shrink: 0;
+  }
+
+  .meta-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--charcoal);
+    letter-spacing: 0.05em;
+  }
+
+  .meta-input {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--charcoal);
+    background: none;
+    border: none;
+    border-bottom: 1px solid transparent;
+    padding: 2px 0;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .meta-input:focus { border-bottom-color: var(--accent); }
+
+  input[type="date"].meta-input {
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  /* mood selector */
+  .mood-options {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+
+  .mood-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--mid);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .mood-chip:hover { border-color: var(--accent); color: var(--accent-dark); }
+  .mood-chip.selected {
+    background: var(--charcoal);
+    border-color: var(--charcoal);
+    color: var(--cream);
+  }
+
+  /* weather */
+  .weather-options {
+    display: flex; gap: 8px;
+  }
+
+  .weather-btn {
+    width: 36px; height: 36px;
+    background: none; border: 1px solid var(--border);
+    cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    border-radius: 2px;
+  }
+
+  .weather-btn:hover { border-color: var(--accent); }
+  .weather-btn.selected { background: var(--charcoal); border-color: var(--charcoal); }
+
+  /* ── MAIN WRITING AREA ── */
+  .write-body {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .write-body > * { background: var(--warm-white); }
+
+  .write-main {
+    padding: 40px;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: var(--light);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .diary-textarea {
+    width: 100%;
+    min-height: 360px;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    line-height: 2.2;
+    color: var(--charcoal);
+    resize: none;
+    letter-spacing: 0.02em;
+  }
+
+  .diary-textarea::placeholder { color: var(--light); }
+
+  /* ── SIDEBAR ── */
+  .write-sidebar {
+    padding: 40px 32px;
+    display: flex; flex-direction: column; gap: 32px;
+  }
+
+  /* image upload */
+  .image-upload-area {
+    border: 1px dashed var(--border);
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-height: 180px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .image-upload-area:hover { border-color: var(--accent); }
+
+  .image-upload-area img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+
+  .upload-overlay {
+    position: absolute; inset: 0;
+    background: rgba(44,44,42,0.6);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.2s;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em;
+    color: white; text-transform: uppercase;
+  }
+
+  .image-upload-area:hover .upload-overlay { opacity: 1; }
+
+  .upload-icon {
+    font-size: 28px; color: var(--light);
+  }
+
+  .upload-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em;
+    color: var(--light); text-transform: uppercase;
+  }
+
+  #imageInput { display: none; }
+
+  /* keywords */
+  .keyword-input-wrap {
+    display: flex; gap: 8px;
+  }
+
+  .keyword-input {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 6px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--charcoal);
+    outline: none;
+    letter-spacing: 0.1em;
+    transition: border-color 0.2s;
+  }
+
+  .keyword-input:focus { border-bottom-color: var(--accent); }
+
+  .keyword-add {
+    background: none; border: none;
+    color: var(--accent);
+    font-size: 20px; cursor: pointer;
+    padding: 0 4px; line-height: 1;
+  }
+
+  .keywords-list {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+  }
+
+  .keyword-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.15em;
+    padding: 4px 10px;
+    background: var(--paper);
+    border: 1px solid var(--border);
+    color: var(--mid);
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .keyword-tag button {
+    background: none; border: none;
+    color: var(--light); cursor: pointer;
+    font-size: 12px; line-height: 1;
+    padding: 0;
+  }
+
+  /* save button */
+  .save-btn {
+    background: var(--charcoal);
+    border: none;
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+  }
+
+  .save-btn:hover { background: var(--accent-dark); }
+
+  /* ── CALENDAR VIEW ── */
+  #calendarView {
+    max-width: 1200px; margin: 0 auto; padding: 48px;
+  }
+
+  .cal-header {
+    display: flex; align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+
+  .cal-month {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: var(--charcoal);
+  }
+
+  .cal-month span {
+    font-size: 18px;
+    color: var(--mid);
+    font-weight: 300;
+    margin-left: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .cal-nav {
+    display: flex; gap: 8px;
+  }
+
+  .cal-nav-btn {
+    width: 40px; height: 40px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--mid);
+    cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .cal-nav-btn:hover { border-color: var(--charcoal); color: var(--charcoal); }
+
+  .cal-grid-header {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    border-left: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+  }
+
+  .cal-dow {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--light);
+    text-transform: uppercase;
+    text-align: center;
+    padding: 12px 0;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    border-left: 1px solid var(--border);
+  }
+
+  .cal-cell {
+    min-height: 120px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+    cursor: pointer;
+    background: var(--warm-white);
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .cal-cell:hover { background: var(--paper); }
+  .cal-cell.empty { background: var(--cream); cursor: default; }
+  .cal-cell.today .cal-date-num { color: var(--accent-dark); font-weight: 500; }
+
+  .cal-date-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .cal-entry-dot {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .cal-entry-preview {
+    background: var(--paper);
+    border-left: 2px solid var(--accent);
+    padding: 4px 8px;
+  }
+
+  .cal-entry-text {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 10px;
+    color: var(--mid);
+    line-height: 1.4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .cal-entry-mood {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    color: var(--light);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* ── ENTRIES VIEW ── */
+  #entriesView {
+    max-width: 1200px; margin: 0 auto; padding: 48px;
+  }
+
+  .entries-header {
+    display: flex; align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  .entries-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+
+  .entries-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    letter-spacing: 0.2em;
+  }
+
+  .entries-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .entry-card {
+    background: var(--warm-white);
+    padding: 32px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .entry-card:hover { background: var(--paper); }
+
+  .entry-card-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--light);
+    text-transform: uppercase;
+  }
+
+  .entry-card-image {
+    width: 100%; height: 160px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .entry-card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--charcoal);
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+  }
+
+  .entry-card-preview {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 12px;
+    color: var(--mid);
+    line-height: 1.9;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+
+  .entry-card-tags {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    margin-top: auto;
+  }
+
+  .entry-card-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    padding: 3px 8px;
+    background: var(--paper);
+    color: var(--light);
+    text-transform: uppercase;
+  }
+
+  .entry-card-meta {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .entry-card-mood {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .entry-card-weather { font-size: 14px; }
+
+  /* empty state */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 40px;
+    background: var(--warm-white);
+  }
+
+  .empty-state p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--light);
+    font-style: italic;
+  }
+
+  /* ── MODAL (entry detail) ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(44,44,42,0.8);
+    z-index: 200;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 40px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--warm-white);
+    max-width: 800px; width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .modal-header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+
+  .modal-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--light);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .modal-title-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--charcoal);
+    letter-spacing: 0.02em;
+  }
+
+  .modal-close {
+    background: none; border: 1px solid var(--border);
+    width: 36px; height: 36px;
+    cursor: pointer; font-size: 16px;
+    color: var(--mid); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .modal-close:hover { background: var(--paper); }
+
+  .modal-body { padding: 40px; }
+
+  .modal-image {
+    width: 100%; max-height: 320px;
+    object-fit: cover;
+    margin-bottom: 32px;
+    display: block;
+  }
+
+  .modal-content-text {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    line-height: 2.2;
+    color: var(--charcoal);
+    white-space: pre-wrap;
+  }
+
+  .modal-footer {
+    padding: 24px 40px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .modal-tags {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+
+  .modal-delete {
+    background: none; border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em;
+    color: var(--mid); cursor: pointer;
+    padding: 8px 16px; text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .modal-delete:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 40px; right: 48px;
+    background: var(--charcoal);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em;
+    padding: 14px 24px;
+    transform: translateY(20px); opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none; z-index: 500;
+    text-transform: uppercase;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* settings modal */
+  .settings-modal {
+    background: var(--warm-white);
+    max-width: 440px; width: 100%;
+    padding: 48px;
+    position: relative;
+  }
+
+  .settings-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px; font-weight: 300;
+    margin-bottom: 32px;
+  }
+
+  .settings-row {
+    margin-bottom: 24px;
+  }
+
+  .settings-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px; letter-spacing: 0.3em;
+    color: var(--light); text-transform: uppercase;
+    margin-bottom: 10px; display: block;
+  }
+
+  .settings-input {
+    width: 100%; background: none;
+    border: none; border-bottom: 1px solid var(--border);
+    padding: 8px 0; font-family: 'DM Mono', monospace;
+    font-size: 14px; color: var(--charcoal);
+    outline: none; letter-spacing: 0.1em;
+    transition: border-color 0.2s;
+  }
+
+  .settings-input:focus { border-bottom-color: var(--accent); }
+
+  .settings-save {
+    width: 100%; background: var(--charcoal); border: none;
+    color: var(--cream); font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 16px; cursor: pointer; margin-top: 8px;
+    transition: background 0.2s;
+  }
+
+  .settings-save:hover { background: var(--accent-dark); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+</style>
+</head>
+<body>
+
+<!-- ── LOCK SCREEN ── -->
+<div id="lockScreen">
+  <p class="lock-title">my edit — journal</p>
+  <p class="lock-label">enter pin</p>
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinInput('1')">1</button>
+    <button class="pin-btn" onclick="pinInput('2')">2</button>
+    <button class="pin-btn" onclick="pinInput('3')">3</button>
+    <button class="pin-btn" onclick="pinInput('4')">4</button>
+    <button class="pin-btn" onclick="pinInput('5')">5</button>
+    <button class="pin-btn" onclick="pinInput('6')">6</button>
+    <button class="pin-btn" onclick="pinInput('7')">7</button>
+    <button class="pin-btn" onclick="pinInput('8')">8</button>
+    <button class="pin-btn" onclick="pinInput('9')">9</button>
+    <button class="pin-btn" style="font-size:13px" onclick="clearPin()">CLR</button>
+    <button class="pin-btn" onclick="pinInput('0')">0</button>
+    <button class="pin-btn" style="font-size:13px" onclick="deletePin()">DEL</button>
+  </div>
+  <p class="lock-error" id="lockError">incorrect pin</p>
+  <p class="lock-hint" onclick="showSettings()">set / change pin</p>
+</div>
+
+<!-- ── SETTINGS MODAL ── -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="settings-modal">
+    <p class="settings-title">pin settings</p>
+    <div class="settings-row">
+      <span class="settings-label">Current Pin (leave blank if first time)</span>
+      <input type="password" class="settings-input" id="oldPin" placeholder="----" maxlength="4">
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">New Pin (4 digits)</span>
+      <input type="password" class="settings-input" id="newPin" placeholder="----" maxlength="4">
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Confirm New Pin</span>
+      <input type="password" class="settings-input" id="confirmPin" placeholder="----" maxlength="4">
+    </div>
+    <p class="lock-error" id="settingsError" style="opacity:0; color:var(--red); font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em; margin-bottom:16px;">error</p>
+    <button class="settings-save" onclick="savePin()">Save Pin</button>
+    <button class="modal-close" style="position:absolute; top:20px; right:20px;" onclick="closeSettings()">✕</button>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app">
+  <header>
+    <div class="header-inner">
+      <span class="logo">my <em>edit</em> — journal</span>
+      <nav>
+        <button class="nav-btn active" onclick="switchView('write', this)">Write</button>
+        <button class="nav-btn" onclick="switchView('entries', this)">All Entries</button>
+        <button class="nav-btn" onclick="switchView('calendar', this)">Calendar</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- WRITE VIEW -->
+  <div id="writeView" class="view active">
+    <div class="write-header">
+      <div class="write-meta-left">
+        <div class="meta-row">
+          <span class="meta-label">Date</span>
+          <input type="date" class="meta-input" id="entryDate">
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Title</span>
+          <input type="text" class="meta-input" id="entryTitle" placeholder="오늘의 제목">
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Mood</span>
+          <div class="mood-options">
+            <button class="mood-chip" onclick="selectMood(this)">calm</button>
+            <button class="mood-chip" onclick="selectMood(this)">inspired</button>
+            <button class="mood-chip" onclick="selectMood(this)">restless</button>
+            <button class="mood-chip" onclick="selectMood(this)">melancholic</button>
+            <button class="mood-chip" onclick="selectMood(this)">energized</button>
+            <button class="mood-chip" onclick="selectMood(this)">focused</button>
+          </div>
+        </div>
+      </div>
+      <div class="write-divider"></div>
+      <div class="write-meta-right">
+        <div class="meta-row">
+          <span class="meta-label">Weather</span>
+          <div class="weather-options">
+            <button class="weather-btn" onclick="selectWeather(this)" data-w="☀️">☀️</button>
+            <button class="weather-btn" onclick="selectWeather(this)" data-w="⛅">⛅</button>
+            <button class="weather-btn" onclick="selectWeather(this)" data-w="☁️">☁️</button>
+            <button class="weather-btn" onclick="selectWeather(this)" data-w="🌧️">🌧️</button>
+            <button class="weather-btn" onclick="selectWeather(this)" data-w="❄️">❄️</button>
+          </div>
+        </div>
+        <div class="meta-row" style="align-items:flex-start; flex-direction:column; gap:8px;">
+          <span class="meta-label">Today's Keywords</span>
+          <div class="keyword-input-wrap">
+            <input type="text" class="keyword-input" id="keywordInput" placeholder="키워드 입력" onkeydown="if(event.key==='Enter')addKeyword()">
+            <button class="keyword-add" onclick="addKeyword()">+</button>
+          </div>
+          <div class="keywords-list" id="keywordsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="write-body">
+      <div class="write-main">
+        <span class="section-label">Today's Entry</span>
+        <textarea class="diary-textarea" id="entryContent" placeholder="오늘 무엇을 보았고, 무엇을 느꼈나요.&#10;어떤 컬러가 눈에 들어왔고, 어떤 실루엣이 기억에 남았나요.&#10;그 이유까지 적어보세요 —"></textarea>
+      </div>
+      <div class="write-sidebar">
+        <div>
+          <span class="section-label">Image</span>
+          <div class="image-upload-area" onclick="document.getElementById('imageInput').click()" id="uploadArea">
+            <span class="upload-icon">+</span>
+            <span class="upload-text">Click to attach image</span>
+            <div class="upload-overlay">Change Image</div>
+          </div>
+          <input type="file" id="imageInput" accept="image/*" onchange="handleImage(event)">
+        </div>
+        <button class="save-btn" onclick="saveEntry()">Save Entry —</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTRIES VIEW -->
+  <div id="entriesView" class="view">
+    <div class="entries-header">
+      <span class="entries-title">All Entries</span>
+      <span class="entries-count" id="entriesCount">0 entries</span>
+    </div>
+    <div class="entries-grid" id="entriesGrid"></div>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div id="calendarView" class="view">
+    <div class="cal-header">
+      <div>
+        <p class="cal-month" id="calMonthLabel">May <span>2025</span></p>
+      </div>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">←</button>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">→</button>
+      </div>
+    </div>
+    <div class="cal-grid-header">
+      <div class="cal-dow">Sun</div>
+      <div class="cal-dow">Mon</div>
+      <div class="cal-dow">Tue</div>
+      <div class="cal-dow">Wed</div>
+      <div class="cal-dow">Thu</div>
+      <div class="cal-dow">Fri</div>
+      <div class="cal-dow">Sat</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+</div>
+
+<!-- Entry Detail Modal -->
+<div class="modal-overlay" id="entryModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <p class="modal-date" id="modalDate"></p>
+        <p class="modal-title-text" id="modalTitle"></p>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <img id="modalImage" class="modal-image" src="" style="display:none">
+      <p class="modal-content-text" id="modalContent"></p>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-tags" id="modalTags"></div>
+      <button class="modal-delete" onclick="deleteEntry()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let currentPin = localStorage.getItem('journalPin') || '0000';
+let pinBuffer = '';
+let selectedMood = '';
+let selectedWeather = '';
+let currentKeywords = [];
+let imageData = null;
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let openEntryId = null;
+
+// ── INIT ──
+document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+
+// ── PIN ──
+function pinInput(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updateDots();
+  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function deletePin() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updateDots();
+}
+
+function clearPin() {
+  pinBuffer = '';
+  updateDots();
+}
+
+function checkPin() {
+  if (pinBuffer === currentPin) {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    renderCalendar();
+    renderEntries();
+  } else {
+    const err = document.getElementById('lockError');
+    err.style.opacity = '1';
+    pinBuffer = '';
+    updateDots();
+    setTimeout(() => err.style.opacity = '0', 1800);
+  }
+}
+
+function showSettings() {
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+  ['oldPin','newPin','confirmPin'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('settingsError').style.opacity = '0';
+}
+
+function savePin() {
+  const oldVal = document.getElementById('oldPin').value;
+  const newVal = document.getElementById('newPin').value;
+  const confirmVal = document.getElementById('confirmPin').value;
+  const err = document.getElementById('settingsError');
+
+  const isFirstTime = !localStorage.getItem('journalPin');
+
+  if (!isFirstTime && oldVal !== currentPin) {
+    err.textContent = 'current pin is incorrect';
+    err.style.opacity = '1'; return;
+  }
+  if (newVal.length !== 4 || !/^\d+$/.test(newVal)) {
+    err.textContent = 'pin must be 4 digits';
+    err.style.opacity = '1'; return;
+  }
+  if (newVal !== confirmVal) {
+    err.textContent = 'pins do not match';
+    err.style.opacity = '1'; return;
+  }
+
+  currentPin = newVal;
+  localStorage.setItem('journalPin', currentPin);
+  closeSettings();
+  showToast('Pin saved');
+}
+
+// ── VIEW SWITCH ──
+function switchView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(name + 'View').classList.add('active');
+  btn.classList.add('active');
+  if (name === 'calendar') renderCalendar();
+  if (name === 'entries') renderEntries();
+}
+
+// ── WRITE ──
+function selectMood(btn) {
+  document.querySelectorAll('.mood-chip').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedMood = btn.textContent;
+}
+
+function selectWeather(btn) {
+  document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedWeather = btn.dataset.w;
+}
+
+function addKeyword() {
+  const input = document.getElementById('keywordInput');
+  const val = input.value.trim();
+  if (!val || currentKeywords.includes(val)) { input.value = ''; return; }
+  currentKeywords.push(val);
+  renderKeywords();
+  input.value = '';
+}
+
+function removeKeyword(kw) {
+  currentKeywords = currentKeywords.filter(k => k !== kw);
+  renderKeywords();
+}
+
+function renderKeywords() {
+  const list = document.getElementById('keywordsList');
+  list.innerHTML = currentKeywords.map(kw =>
+    `<span class="keyword-tag">${kw}<button onclick="removeKeyword('${kw}')">✕</button></span>`
+  ).join('');
+}
+
+function handleImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageData = e.target.result;
+    const area = document.getElementById('uploadArea');
+    area.innerHTML = `<img src="${imageData}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"><div class="upload-overlay">Change Image</div>`;
+    area.onclick = () => document.getElementById('imageInput').click();
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveEntry() {
+  const title = document.getElementById('entryTitle').value.trim();
+  const content = document.getElementById('entryContent').value.trim();
+  const date = document.getElementById('entryDate').value;
+
+  if (!content) { showToast('내용을 입력해주세요'); return; }
+
+  const entries = getEntries();
+  const entry = {
+    id: Date.now(),
+    date, title: title || '무제',
+    content, mood: selectedMood,
+    weather: selectedWeather,
+    keywords: [...currentKeywords],
+    image: imageData
+  };
+
+  entries.push(entry);
+  saveEntries(entries);
+
+  // reset
+  document.getElementById('entryTitle').value = '';
+  document.getElementById('entryContent').value = '';
+  document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('.mood-chip').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
+  selectedMood = ''; selectedWeather = '';
+  currentKeywords = []; renderKeywords();
+  imageData = null;
+  document.getElementById('uploadArea').innerHTML = `<span class="upload-icon">+</span><span class="upload-text">Click to attach image</span><div class="upload-overlay">Change Image</div>`;
+  document.getElementById('uploadArea').onclick = () => document.getElementById('imageInput').click();
+
+  showToast('Saved —');
+}
+
+// ── DATA ──
+function getEntries() {
+  return JSON.parse(localStorage.getItem('journalEntries') || '[]');
+}
+
+function saveEntries(entries) {
+  localStorage.setItem('journalEntries', JSON.stringify(entries));
+}
+
+// ── ENTRIES LIST ──
+function renderEntries() {
+  const entries = getEntries().sort((a,b) => new Date(b.date) - new Date(a.date));
+  const grid = document.getElementById('entriesGrid');
+  const count = document.getElementById('entriesCount');
+  count.textContent = entries.length + ' entries';
+
+  if (!entries.length) {
+    grid.innerHTML = `<div class="empty-state"><p>아직 작성된 일기가 없어요.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = entries.map(e => `
+    <div class="entry-card" onclick="openEntry(${e.id})">
+      <span class="entry-card-date">${formatDate(e.date)}</span>
+      ${e.image ? `<img class="entry-card-image" src="${e.image}" alt="">` : ''}
+      <p class="entry-card-title">${e.title}</p>
+      <p class="entry-card-preview">${e.content}</p>
+      <div class="entry-card-meta">
+        <span class="entry-card-mood">${e.mood || ''}</span>
+        <span class="entry-card-weather">${e.weather || ''}</span>
+      </div>
+      ${e.keywords.length ? `<div class="entry-card-tags">${e.keywords.map(k=>`<span class="entry-card-tag">${k}</span>`).join('')}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── CALENDAR ──
+function renderCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonthLabel').innerHTML = `${months[currentMonth]} <span>${currentYear}</span>`;
+
+  const entries = getEntries();
+  const entryMap = {};
+  entries.forEach(e => {
+    if (!entryMap[e.date]) entryMap[e.date] = [];
+    entryMap[e.date].push(e);
+  });
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+
+  const grid = document.getElementById('calGrid');
+  let html = '';
+
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-cell empty"></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayEntries = entryMap[dateStr] || [];
+    const isToday = dateStr === today;
+
+    html += `<div class="cal-cell ${isToday ? 'today' : ''}" onclick="calCellClick('${dateStr}')">
+      <span class="cal-date-num">${d}</span>
+      <div class="cal-entry-dot">
+        ${dayEntries.slice(0,2).map(e => `
+          <div class="cal-entry-preview">
+            <div class="cal-entry-mood">${e.mood || ''} ${e.weather || ''}</div>
+            <div class="cal-entry-text">${e.title}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+function calCellClick(dateStr) {
+  const entries = getEntries().filter(e => e.date === dateStr);
+  if (entries.length === 1) { openEntry(entries[0].id); return; }
+  if (entries.length > 1) { openEntry(entries[0].id); return; }
+  // no entry — jump to write with that date
+  document.getElementById('entryDate').value = dateStr;
+  switchView('write', document.querySelectorAll('.nav-btn')[0]);
+}
+
+// ── MODAL ──
+function openEntry(id) {
+  const entry = getEntries().find(e => e.id === id);
+  if (!entry) return;
+  openEntryId = id;
+
+  document.getElementById('modalDate').textContent = formatDate(entry.date) + (entry.weather ? '  ' + entry.weather : '');
+  document.getElementById('modalTitle').textContent = entry.title;
+  document.getElementById('modalContent').textContent = entry.content;
+
+  const img = document.getElementById('modalImage');
+  if (entry.image) { img.src = entry.image; img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+
+  const tags = document.getElementById('modalTags');
+  const moodSpan = entry.mood ? `<span class="entry-card-tag" style="color:var(--accent)">${entry.mood}</span>` : '';
+  const kwTags = entry.keywords.map(k => `<span class="entry-card-tag">${k}</span>`).join('');
+  tags.innerHTML = moodSpan + kwTags;
+
+  document.getElementById('entryModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('entryModal').classList.remove('open');
+  openEntryId = null;
+}
+
+function deleteEntry() {
+  if (!openEntryId) return;
+  const entries = getEntries().filter(e => e.id !== openEntryId);
+  saveEntries(entries);
+  closeModal();
+  renderEntries();
+  renderCalendar();
+  showToast('Deleted');
+}
+
+// ── UTILS ──
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// close modals on overlay click
+document.getElementById('entryModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('settingsModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSettings();
+});
+</script>
+</body>
+</html>
